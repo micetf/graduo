@@ -1,30 +1,55 @@
 // src/App.jsx
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import ControlPanel from "./components/ControlPanel";
 import GraduatedLine from "@common/components/GraduatedLine";
 import Navbar from "@common/components/Navbar";
+import { useGraduationInteractions } from "@common/hooks";
 
-/**
- * Composant principal de l'application GraduLine
- * Gère l'état global et la validation des paramètres de la ligne graduée
- * @returns {JSX.Element} Le composant App
- */
+const DEFAULT_SETTINGS = {
+    notation: "decimal",
+    intervals: [0, 10],
+    denominator: 4,
+    step: 1,
+};
+
 function App() {
-    const [settings, setSettings] = useState({
-        notation: "decimal",
-        intervals: [0, 10],
-        denominator: 4,
-        step: 1,
-    });
+    const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+    const [values, setValues] = useState(new Set());
+    const [hiddenMainValues, setHiddenMainValues] = useState(new Set());
+    const [arrows, setArrows] = useState(new Set());
 
-    /**
-     * Gère les modifications des paramètres avec validation
-     * @param {Object} newSettings - Nouveaux paramètres à valider
-     * @param {string} newSettings.notation - Type de notation ("decimal", "fraction", "mixedNumber")
-     * @param {number[]} newSettings.intervals - Bornes [min, max] de la ligne
-     * @param {number} newSettings.denominator - Dénominateur pour les fractions
-     * @param {number} newSettings.step - Pas entre les graduations principales
-     */
+    const { hideAllMainValues, showAllMainValues, resetDisplay } =
+        useGraduationInteractions(settings, null, {
+            values,
+            hiddenMainValues,
+            arrows,
+            setValues,
+            setHiddenMainValues,
+            setArrows,
+        });
+
+    const handleStateChange = (stateType, newState) => {
+        switch (stateType) {
+            case "values":
+                setValues(newState);
+                break;
+            case "hiddenMainValues":
+                setHiddenMainValues(newState);
+                break;
+            case "arrows":
+                setArrows(newState);
+                break;
+        }
+    };
+
+    const areAllMainValuesHidden = useMemo(() => {
+        const mainValuesCount =
+            Math.floor(
+                (settings.intervals[1] - settings.intervals[0]) / settings.step
+            ) + 1;
+        return hiddenMainValues.size === mainValuesCount;
+    }, [hiddenMainValues, settings.intervals, settings.step]);
+
     const handleSettingsChange = (newSettings) => {
         const validatedSettings = {
             ...newSettings,
@@ -51,10 +76,20 @@ function App() {
                         <ControlPanel
                             settings={settings}
                             onSettingsChange={handleSettingsChange}
+                            onResetDisplay={resetDisplay}
+                            onHideMainValues={hideAllMainValues}
+                            onShowMainValues={showAllMainValues}
+                            areAllMainValuesHidden={areAllMainValuesHidden}
                         />
                     </div>
                     <div className="md:col-span-3">
-                        <GraduatedLine settings={settings} />
+                        <GraduatedLine
+                            settings={settings}
+                            values={values}
+                            hiddenMainValues={hiddenMainValues}
+                            arrows={arrows}
+                            onStateChange={handleStateChange}
+                        />
                     </div>
                 </div>
             </div>
