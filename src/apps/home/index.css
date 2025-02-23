@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    html {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+            "Helvetica Neue", Arial, "Noto Sans", sans-serif,
+            "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    }
+
+    body {
+        @apply bg-gray-50;
+    }
+}
+
+@layer components {
+    .app-card {
+        @apply transition-all duration-300 transform hover:scale-105;
+    }
+
+    .app-card:hover .app-icon {
+        @apply scale-110;
+    }
+
+    .app-icon {
+        @apply transition-transform duration-300;
+    }
+}
+
+/* Animation pour les cartes "Bientôt disponible" */
+@keyframes pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+.coming-soon-badge {
+    @apply animate-[pulse_2s_ease-in-out_infinite];
+}
