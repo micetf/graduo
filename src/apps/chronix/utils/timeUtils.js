@@ -260,6 +260,7 @@ export const getBestDisplayUnit = (duration, baseUnit) => {
 };
 
 /**
+/**
  * Arrondit une valeur temporelle à la graduation la plus proche
  * @param {number} value - La valeur à arrondir
  * @param {Object} settings - Les paramètres de configuration
@@ -268,12 +269,21 @@ export const getBestDisplayUnit = (duration, baseUnit) => {
 export const snapToTimeGraduation = (value, settings) => {
     const { timeUnit, step } = settings;
 
-    // Pour les graduations principales (multiples du pas)
+    // D'abord, vérifions si c'est déjà une graduation principale
     if (Math.abs(value % step) < 0.001) {
         return value; // Déjà sur une graduation principale
     }
 
-    // Déterminer les subdivisions en fonction de l'unité de temps
+    // Trouver la graduation principale inférieure et supérieure
+    const lowerMain = Math.floor(value / step) * step;
+    const upperMain = Math.ceil(value / step) * step;
+
+    // Si la valeur est plus proche de la graduation principale inférieure ou supérieure
+    // que de toute sous-graduation, on l'arrondit à cette graduation principale
+    if (value - lowerMain < 0.1) return lowerMain;
+    if (upperMain - value < 0.1) return upperMain;
+
+    // Calculer les subdivisions pour déterminer les sous-graduations valides
     let subdivisions;
     switch (timeUnit) {
         case "second":
@@ -292,9 +302,16 @@ export const snapToTimeGraduation = (value, settings) => {
             subdivisions = 10;
     }
 
-    // Calculer la taille d'un intervalle entre deux graduations
-    const intervalSize = step / subdivisions;
+    // Pour les graduations standard avec step >= 1
+    if (step >= 1) {
+        // Déterminer la taille d'un intervalle entre deux sous-graduations
+        const subStep = step / Math.min(subdivisions, 10); // Limiter pour éviter trop de sous-graduations
 
-    // Arrondir à la graduation la plus proche
-    return Math.round(value / intervalSize) * intervalSize;
+        // Arrondir à la sous-graduation la plus proche
+        return Math.round(value / subStep) * subStep;
+    }
+    // Pour les pas fractionnaires (0.5h, 0.25j, etc.)
+    else {
+        return Math.round(value / step) * step;
+    }
 };

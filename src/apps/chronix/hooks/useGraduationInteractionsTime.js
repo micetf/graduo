@@ -49,6 +49,7 @@ export const useGraduationInteractionsTime = (
             // Arrondir la valeur à la graduation la plus proche
             clickedValue = snapToTimeGraduation(clickedValue, settings);
 
+            // Vérifier que la valeur arrondie est dans les limites
             if (clickedValue >= start && clickedValue <= end) {
                 if (isAbove) {
                     // Pour les clics au-dessus de la ligne
@@ -62,7 +63,7 @@ export const useGraduationInteractionsTime = (
                             return newHidden;
                         });
                     } else {
-                        // Si c'est une graduation secondaire
+                        // Si c'est une sous-graduation
                         setValues((prev) => {
                             const newValues = new Set(prev);
                             newValues.has(clickedValue)

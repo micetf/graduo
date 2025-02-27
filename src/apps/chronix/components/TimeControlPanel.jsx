@@ -113,6 +113,12 @@ const TimeControlPanel = memo(
             }
         };
 
+        // Fonction pour obtenir le libellé de l'unité de temps
+        const getTimeUnitLabel = (unitValue) => {
+            const unit = timeUnits.find((unit) => unit.value === unitValue);
+            return unit ? unit.label : unitValue;
+        };
+
         return (
             <div className="bg-white p-4 rounded-lg shadow space-y-6">
                 <div className="space-y-4">
@@ -187,8 +193,12 @@ const TimeControlPanel = memo(
                                 <option key={step} value={step}>
                                     {step}{" "}
                                     {step === 1
-                                        ? settings.timeUnit
-                                        : `${settings.timeUnit}s`}
+                                        ? getTimeUnitLabel(
+                                              settings.timeUnit
+                                          ).replace(/s$/, "")
+                                        : `${getTimeUnitLabel(
+                                              settings.timeUnit
+                                          )}`}
                                 </option>
                             ))}
                         </select>
@@ -234,7 +244,7 @@ const TimeControlPanel = memo(
                                     ? onShowMainValues
                                     : onHideMainValues
                             }
-                            className="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 
+                            className="w-full bg-blue-50 hover:bg-blue-100 text-blue-700
                                  py-2 px-4 rounded transition-colors border border-blue-200"
                         >
                             {areAllMainValuesHidden ? "Afficher" : "Masquer"}{" "}
@@ -243,7 +253,7 @@ const TimeControlPanel = memo(
 
                         <button
                             onClick={onResetDisplay}
-                            className="w-full bg-gray-50 hover:bg-gray-100 text-gray-700 
+                            className="w-full bg-gray-50 hover:bg-gray-100 text-gray-700
                                  py-2 px-4 rounded transition-colors border border-gray-200"
                         >
                             Réinitialiser l&rsquo;affichage
