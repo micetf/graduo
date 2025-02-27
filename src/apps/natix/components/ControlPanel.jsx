@@ -23,7 +23,8 @@ const ControlPanel = memo(
         areAllMainValuesHidden,
     }) => {
         const handleIntervalChange = (event, index) => {
-            const newValue = Number(event.target.value);
+            const rawValue = Number(event.target.value);
+            const newValue = Math.max(-100, Math.min(100, rawValue));
             const newIntervals = [...settings.intervals];
 
             if (index === 0 && newValue >= settings.intervals[1]) return;
@@ -49,6 +50,8 @@ const ControlPanel = memo(
                             <input
                                 type="number"
                                 value={settings.intervals[0]}
+                                min="-100"
+                                max="99"
                                 onChange={(e) => handleIntervalChange(e, 0)}
                                 className="w-24 border border-gray-300 rounded-md shadow-sm p-2"
                             />
@@ -60,6 +63,8 @@ const ControlPanel = memo(
                             <input
                                 type="number"
                                 value={settings.intervals[1]}
+                                min="-99"
+                                max="100"
                                 onChange={(e) => handleIntervalChange(e, 1)}
                                 className="w-24 border border-gray-300 rounded-md shadow-sm p-2"
                             />
