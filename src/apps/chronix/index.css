@@ -4,8 +4,80 @@
 
 @layer base {
     html {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, 
-                     "Helvetica Neue", Arial, "Noto Sans", sans-serif, 
-                     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+            "Helvetica Neue", Arial, "Noto Sans", sans-serif,
+            "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    }
+
+    body {
+        @apply bg-gray-50;
+    }
+}
+
+@layer components {
+    /* Styles spécifiques à la ligne graduée temporelle */
+    .time-slider {
+        @apply relative cursor-pointer;
+    }
+
+    .time-value {
+        @apply transition-all duration-300 transform hover:scale-110;
+    }
+
+    /* Animation pour les marqueurs temporels */
+    @keyframes pulse-marker {
+        0%,
+        100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+        50% {
+            opacity: 0.7;
+            transform: scale(1.1);
+        }
+    }
+
+    .time-marker-pulse {
+        animation: pulse-marker 2s infinite;
+    }
+
+    /* Styles pour les onglets */
+    .time-tab {
+        @apply px-4 py-2 rounded-t-lg cursor-pointer;
+    }
+
+    .time-tab-active {
+        @apply bg-white text-blue-600 border-b-2 border-blue-500 font-medium;
+    }
+
+    .time-tab-inactive {
+        @apply text-gray-500 hover:text-gray-700 hover:bg-gray-100;
+    }
+
+    /* Styles pour les cartes de temps */
+    .time-card {
+        @apply bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow duration-200;
+    }
+
+    /* Styles spécifiques pour les boutons temporels */
+    .time-button {
+        @apply px-4 py-2 rounded transition-colors;
+    }
+
+    .time-button-primary {
+        @apply bg-purple-600 hover:bg-purple-700 text-white;
+    }
+
+    .time-button-secondary {
+        @apply bg-gray-200 hover:bg-gray-300 text-gray-800;
+    }
+
+    /* Styles pour les durées visuelles */
+    .time-duration-bar {
+        @apply h-4 bg-purple-100 rounded-full overflow-hidden;
+    }
+
+    .time-duration-progress {
+        @apply h-full bg-purple-500 transition-all duration-300;
     }
 }
