@@ -30,15 +30,20 @@ function App() {
     const [arrows, setArrows] = useState(new Set());
 
     // Hooks personnalisés pour la gestion des interactions
-    const { hideAllMainValues, showAllMainValues, resetDisplay } =
-        useGraduationInteractionsTime(settings, null, {
-            values,
-            hiddenMainValues,
-            arrows,
-            setValues,
-            setHiddenMainValues,
-            setArrows,
-        });
+    const {
+        hideAllMainValues,
+        showAllMainValues,
+        resetDisplay,
+        selectionMode,
+        toggleSelectionMode,
+    } = useGraduationInteractionsTime(settings, null, {
+        values,
+        hiddenMainValues,
+        arrows,
+        setValues,
+        setHiddenMainValues,
+        setArrows,
+    });
 
     // Vérifie si toutes les graduations principales sont masquées
     const areAllMainValuesHidden = useMemo(() => {
@@ -113,6 +118,7 @@ function App() {
                         hiddenMainValues={hiddenMainValues}
                         arrows={arrows}
                         onStateChange={handleStateChange}
+                        selectionMode={selectionMode} // Ajout de cette ligne
                     />
                 </div>
 
@@ -127,6 +133,8 @@ function App() {
                             onHideMainValues={hideAllMainValues}
                             onShowMainValues={showAllMainValues}
                             areAllMainValuesHidden={areAllMainValuesHidden}
+                            selectionMode={selectionMode}
+                            onToggleSelectionMode={toggleSelectionMode}
                         />
                     </div>
 

@@ -260,8 +260,8 @@ export const getBestDisplayUnit = (duration, baseUnit) => {
 };
 
 /**
-/**
  * Arrondit une valeur temporelle à la graduation la plus proche
+ * en respectant les subdivisions naturelles de chaque unité de temps
  * @param {number} value - La valeur à arrondir
  * @param {Object} settings - Les paramètres de configuration
  * @returns {number} La valeur arrondie
@@ -278,40 +278,48 @@ export const snapToTimeGraduation = (value, settings) => {
     const lowerMain = Math.floor(value / step) * step;
     const upperMain = Math.ceil(value / step) * step;
 
-    // Si la valeur est plus proche de la graduation principale inférieure ou supérieure
-    // que de toute sous-graduation, on l'arrondit à cette graduation principale
-    if (value - lowerMain < 0.1) return lowerMain;
-    if (upperMain - value < 0.1) return upperMain;
+    // Si la valeur est très proche d'une graduation principale, on l'arrondit à celle-ci
+    if (Math.abs(value - lowerMain) < 0.05) return lowerMain;
+    if (Math.abs(upperMain - value) < 0.05) return upperMain;
 
-    // Calculer les subdivisions pour déterminer les sous-graduations valides
+    // Définir les subdivisions naturelles selon l'unité de temps
     let subdivisions;
+    let subStep;
+
     switch (timeUnit) {
         case "second":
-            subdivisions = 10; // Dixièmes de seconde
+            // Pour les secondes: subdivisions de 1 seconde
+            subdivisions = 10;
+            subStep = step / subdivisions;
             break;
         case "minute":
-            subdivisions = 60; // 60 secondes dans une minute
+            // Pour les minutes: subdivisions de 1 minute
+            subdivisions = step >= 5 ? step : Math.min(step * 10, 10);
+            subStep = step / subdivisions;
             break;
         case "hour":
-            subdivisions = 60; // 60 minutes dans une heure
+            // Pour les heures: subdivisions de 15 minutes (quarts d'heure)
+            subdivisions = 4;
+            subStep = step / subdivisions;
             break;
         case "day":
-            subdivisions = 24; // 24 heures dans une journée
+            // Pour les jours: subdivisions de 6 heures (quarts de jour)
+            subdivisions = 4;
+            subStep = step / subdivisions;
             break;
         default:
             subdivisions = 10;
+            subStep = step / subdivisions;
     }
 
-    // Pour les graduations standard avec step >= 1
-    if (step >= 1) {
-        // Déterminer la taille d'un intervalle entre deux sous-graduations
-        const subStep = step / Math.min(subdivisions, 10); // Limiter pour éviter trop de sous-graduations
+    // Arrondir à la subdivision la plus proche
+    const normalizedValue = (value - lowerMain) / subStep;
+    const roundedNormalized = Math.round(normalizedValue);
+    const snappedValue = lowerMain + roundedNormalized * subStep;
 
-        // Arrondir à la sous-graduation la plus proche
-        return Math.round(value / subStep) * subStep;
-    }
-    // Pour les pas fractionnaires (0.5h, 0.25j, etc.)
-    else {
-        return Math.round(value / step) * step;
-    }
+    // S'assurer que la valeur reste dans les limites
+    return Math.max(
+        settings.intervals[0],
+        Math.min(settings.intervals[1], snappedValue)
+    );
 };

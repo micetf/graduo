@@ -44,94 +44,102 @@ export const calculateOptimalTimeSubdivisions = (settings) => {
     const { timeUnit, step, intervals } = settings;
     const range = intervals[1] - intervals[0];
 
-    // Tableau des subdivisions naturelles pour chaque unité
-    const naturalSubdivisions = {
-        second: [2, 5, 10, 15, 20, 30],
-        minute: [2, 4, 5, 6, 10, 12, 15, 20, 30],
-        hour: [2, 3, 4, 6, 12, 15, 20, 30],
-        day: [2, 3, 4, 6, 8, 12],
-    };
-
-    // Déterminer le nombre optimal de subdivisions
-    const mainGraduationsCount = Math.floor(range / step) + 1;
-
-    // Si nous avons trop de graduations principales, réduire les subdivisions
-    if (mainGraduationsCount > 20) {
-        return {
-            subdivisions: 2, // Subdivision minimale pour ne pas surcharger
-            subdivisionStep: step / 2,
-        };
-    }
-
-    // Si nous avons très peu de graduations principales, augmenter les subdivisions
-    if (mainGraduationsCount <= 5) {
-        // Choisir une subdivision naturelle adaptée
-        const divisions = naturalSubdivisions[timeUnit];
-        // Trouver une subdivision qui divise bien le pas
-        for (const div of divisions) {
-            if (step % div === 0 || div % step === 0) {
-                return {
-                    subdivisions: step / div,
-                    subdivisionStep: div,
-                };
-            }
-        }
-
-        // Si aucune ne convient, choisir une valeur qui donne un résultat propre
-        const subDiv =
-            timeUnit === "second" || timeUnit === "minute"
-                ? 5
-                : timeUnit === "hour"
-                ? 15
-                : 6;
-
-        return {
-            subdivisions: Math.max(5, Math.floor(step / subDiv)),
-            subdivisionStep: subDiv,
-        };
-    }
-
-    // Cas standard: équilibrer entre lisibilité et précision
+    // Déterminer le nombre optimal de subdivisions en fonction des recommandations pédagogiques
     let subdivisionCount;
+    let subdivisionStep;
 
-    // Adapter en fonction de l'unité et du pas
+    // Configurations recommandées selon l'analyse pédagogique
     switch (timeUnit) {
         case "second":
-            if (step >= 30) subdivisionCount = 6;
-            else if (step >= 15) subdivisionCount = 5;
-            else if (step >= 5) subdivisionCount = 5;
-            else subdivisionCount = 2; // Pour les petits pas
+            // Pour les secondes: subdivisions de 1 seconde
+            if (step === 10) {
+                // Pas recommandé de 10 secondes
+                subdivisionCount = 10;
+            } else if (step === 5) {
+                subdivisionCount = 5;
+            } else if (step === 15) {
+                subdivisionCount = 15;
+            } else if (step === 30) {
+                subdivisionCount = 6; // Subdivisions de 5 secondes
+            } else {
+                // Pour les autres pas
+                subdivisionCount = step;
+            }
             break;
+
         case "minute":
-            if (step >= 30) subdivisionCount = 6;
-            else if (step >= 15) subdivisionCount = 3;
-            else if (step >= 5) subdivisionCount = 5;
-            else subdivisionCount = 2;
+            // Pour les minutes: subdivisions de 1 minute
+            if (step === 5) {
+                // Pas recommandé de 5 minutes
+                subdivisionCount = 5;
+            } else if (step === 10) {
+                subdivisionCount = 10;
+            } else if (step === 15) {
+                subdivisionCount = 15;
+            } else if (step === 30) {
+                subdivisionCount = 6; // Subdivisions de 5 minutes
+            } else {
+                // Pour les autres pas
+                subdivisionCount = step;
+            }
             break;
+
         case "hour":
-            if (step >= 6) subdivisionCount = 6;
-            else if (step >= 1) subdivisionCount = 4;
-            else subdivisionCount = 2;
+            // Pour les heures: subdivisions de 15 minutes (quarts d'heure)
+            if (step === 1) {
+                // Pas recommandé de 1 heure
+                subdivisionCount = 4; // 4 subdivisions de 15 minutes
+            } else if (step === 2) {
+                subdivisionCount = 8; // 8 subdivisions de 15 minutes
+            } else if (step === 3) {
+                subdivisionCount = 12; // 12 subdivisions de 15 minutes
+            } else if (step === 6) {
+                subdivisionCount = 24; // 24 subdivisions de 15 minutes
+            } else if (step === 12) {
+                subdivisionCount = 48; // 48 subdivisions de 15 minutes
+            } else if (step === 0.5) {
+                subdivisionCount = 2; // 2 subdivisions de 15 minutes
+            } else if (step === 0.25) {
+                subdivisionCount = 1; // Pas de subdivision pour 15 minutes
+            } else {
+                // Pour les autres pas
+                subdivisionCount = Math.ceil(step * 4); // 4 subdivisions par heure
+            }
             break;
+
         case "day":
-            if (step >= 7) subdivisionCount = 7; // Semaine
-            else if (step >= 1) subdivisionCount = 4; // Jours en quarts
-            else subdivisionCount = 2;
+            // Pour les jours: subdivisions de 6 heures (quarts de jour)
+            if (step === 1) {
+                // Pas recommandé de 1 jour
+                subdivisionCount = 4; // 4 subdivisions de 6 heures
+            } else if (step === 7) {
+                // Pour une semaine
+                subdivisionCount = 28; // 28 subdivisions de 6 heures
+            } else if (step === 0.5) {
+                subdivisionCount = 2; // 2 subdivisions de 6 heures
+            } else {
+                // Pour les autres pas
+                subdivisionCount = Math.ceil(step * 4); // 4 subdivisions par jour
+            }
             break;
+
         default:
+            // Valeur par défaut
             subdivisionCount = 5;
     }
 
-    // Ajuster les subdivisions pour les pas non-standards
-    if (step % 1 !== 0) {
-        // Pour les pas fractionnaires (0.5h, 0.25j, etc.)
-        subdivisionCount = Math.ceil(1 / step);
+    // Si le nombre de graduations principales est très élevé, réduire les subdivisions
+    const mainGraduationsCount = Math.floor(range / step) + 1;
+    if (mainGraduationsCount > 20 && subdivisionCount > 2) {
+        subdivisionCount = 2; // Utiliser seulement 2 subdivisions pour éviter la surcharge
     }
 
-    // Calculer les subdivisions et leur pas
+    // Calculer le pas des subdivisions
+    subdivisionStep = step / subdivisionCount;
+
     return {
         subdivisions: subdivisionCount,
-        subdivisionStep: step / subdivisionCount,
+        subdivisionStep,
     };
 };
 

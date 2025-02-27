@@ -10,6 +10,8 @@ import PropTypes from "prop-types";
  * @param {Function} props.onHideMainValues - Fonction pour masquer toutes les graduations principales
  * @param {Function} props.onShowMainValues - Fonction pour afficher toutes les graduations principales
  * @param {boolean} props.areAllMainValuesHidden - Indique si toutes les graduations principales sont masquées
+ * @param {string} props.selectionMode - Mode de sélection actuel ("normal" ou "comparison")
+ * @param {Function} props.onToggleSelectionMode - Fonction pour basculer le mode de sélection
  * @returns {JSX.Element} Le composant TimeControlPanel
  */
 const TimeControlPanel = memo(
@@ -20,23 +22,43 @@ const TimeControlPanel = memo(
         onHideMainValues,
         onShowMainValues,
         areAllMainValuesHidden,
+        selectionMode,
+        onToggleSelectionMode,
     }) => {
         // Gestion des unités de temps et configurations associées
         const timeUnits = [
             {
                 value: "second",
                 label: "Secondes",
-                maxInterval: 300,
-                defaultStep: 5,
+                maxInterval: 60, // 0-60 secondes (une minute)
+                defaultStep: 10, // pas de 10 secondes
+                defaultDenominator: 10, // Pour les dixièmes de seconde
+                subdivisions: 10, // Pour avoir des subdivisions de 1 seconde
             },
             {
                 value: "minute",
                 label: "Minutes",
-                maxInterval: 180,
-                defaultStep: 5,
+                maxInterval: 60, // 0-60 minutes (une heure)
+                defaultStep: 5, // Pas de 5 minutes
+                defaultDenominator: 60, // Pour les secondes dans une minute
+                subdivisions: 5, // Pour avoir des subdivisions de 1 minute
             },
-            { value: "hour", label: "Heures", maxInterval: 24, defaultStep: 1 },
-            { value: "day", label: "Jours", maxInterval: 31, defaultStep: 1 },
+            {
+                value: "hour",
+                label: "Heures",
+                maxInterval: 24, // 0-24 heures (une journée)
+                defaultStep: 1, // Pas de 1 heure
+                defaultDenominator: 60, // Pour les minutes dans une heure
+                subdivisions: 4, // Pour avoir des subdivisions de 15 minutes
+            },
+            {
+                value: "day",
+                label: "Jours",
+                maxInterval: 30, // 1-30 jours (un mois)
+                defaultStep: 1, // Pas de 1 jour
+                defaultDenominator: 24, // Pour les heures dans une journée
+                subdivisions: 4, // Pour avoir des subdivisions de 6 heures
+            },
         ];
 
         // Fonction pour changer l'unité de temps
@@ -45,35 +67,23 @@ const TimeControlPanel = memo(
                 (unit) => unit.value === newUnit
             );
 
+            if (!selectedUnit) return;
+
             // Adapt intervals and step based on the selected time unit
             const newSettings = {
                 ...settings,
                 timeUnit: newUnit,
-                intervals: [
-                    0,
-                    selectedUnit ? selectedUnit.maxInterval / 3 : 60,
-                ],
-                step: selectedUnit ? selectedUnit.defaultStep : 5,
-                denominator: getUnitDenominator(newUnit),
+                intervals: [0, selectedUnit.maxInterval], // Utilise l'intervalle recommandé
+                step: selectedUnit.defaultStep, // Utilise le pas recommandé
+                denominator: selectedUnit.defaultDenominator, // Utilise le dénominateur recommandé
             };
 
-            onSettingsChange(newSettings);
-        };
-
-        // Définir le dénominateur en fonction de l'unité
-        const getUnitDenominator = (unit) => {
-            switch (unit) {
-                case "second":
-                    return 10; // Dixièmes de seconde
-                case "minute":
-                    return 60; // 60 secondes
-                case "hour":
-                    return 60; // 60 minutes
-                case "day":
-                    return 24; // 24 heures
-                default:
-                    return 60;
+            // Cas spécial pour les jours: on commence à 1 au lieu de 0
+            if (newUnit === "day") {
+                newSettings.intervals = [1, selectedUnit.maxInterval];
             }
+
+            onSettingsChange(newSettings);
         };
 
         // Gestion du changement d'intervalle
@@ -101,13 +111,13 @@ const TimeControlPanel = memo(
         const getStepOptions = () => {
             switch (settings.timeUnit) {
                 case "second":
-                    return [1, 5, 10, 15, 30];
+                    return [1, 5, 10, 15, 30]; // 10 est le pas recommandé
                 case "minute":
-                    return [1, 5, 10, 15, 30];
+                    return [1, 5, 10, 15, 30]; // 5 est le pas recommandé
                 case "hour":
-                    return [0.25, 0.5, 1, 2, 3, 6];
+                    return [0.25, 0.5, 1, 2, 3, 6, 12]; // 1 est le pas recommandé
                 case "day":
-                    return [0.5, 1, 2, 7]; // Inclut une semaine
+                    return [0.5, 1, 2, 7, 14]; // 1 est le pas recommandé
                 default:
                     return [1, 5, 10];
             }
@@ -232,6 +242,31 @@ const TimeControlPanel = memo(
                     </div>
                 </div>
 
+                {/* Mode de sélection */}
+                <div className="pt-4 border-t border-gray-200">
+                    <h3 className="text-sm font-medium text-gray-700 mb-3">
+                        Mode d&apos;interaction
+                    </h3>
+                    <button
+                        onClick={onToggleSelectionMode}
+                        className={`w-full mb-3 py-2 px-4 rounded transition-colors border ${
+                            selectionMode === "comparison"
+                                ? "bg-indigo-100 hover:bg-indigo-200 text-indigo-700 border-indigo-300"
+                                : "bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300"
+                        }`}
+                        title="Basculer entre les modes d'interaction"
+                    >
+                        {selectionMode === "comparison"
+                            ? "Mode comparaison (actif)"
+                            : "Mode comparaison (inactif)"}
+                    </button>
+                    <div className="text-xs text-gray-500 mb-3">
+                        {selectionMode === "comparison"
+                            ? "En mode comparaison, toutes les valeurs sur lesquelles vous cliquez sont ajoutées comme points de comparaison, y compris les graduations principales."
+                            : "En mode normal, cliquer sur une graduation principale la masque/affiche, et cliquer sur une sous-graduation l'ajoute comme point de comparaison."}
+                    </div>
+                </div>
+
                 {/* Actions de la ligne graduée */}
                 <div className="pt-4 border-t border-gray-200">
                     <h3 className="text-sm font-medium text-gray-700 mb-3">
@@ -279,6 +314,8 @@ TimeControlPanel.propTypes = {
     onHideMainValues: PropTypes.func.isRequired,
     onShowMainValues: PropTypes.func.isRequired,
     areAllMainValuesHidden: PropTypes.bool.isRequired,
+    selectionMode: PropTypes.string.isRequired,
+    onToggleSelectionMode: PropTypes.func.isRequired,
 };
 
 TimeControlPanel.displayName = "TimeControlPanel";

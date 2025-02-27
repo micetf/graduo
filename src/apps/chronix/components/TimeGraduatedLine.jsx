@@ -18,6 +18,7 @@ import {
  * @param {Set} [props.hiddenMainValues] Graduations principales masquées (optionnel)
  * @param {Set} [props.arrows] Flèches à afficher (optionnel)
  * @param {Function} [props.onStateChange] Callback appelé lors des changements d'état
+ * @param {string} [props.selectionMode] Mode de sélection ("normal" ou "comparison")
  * @returns {JSX.Element} Le composant TimeGraduatedLine
  */
 const TimeGraduatedLine = memo(
@@ -27,6 +28,7 @@ const TimeGraduatedLine = memo(
         hiddenMainValues: externalHiddenMainValues,
         arrows: externalArrows,
         onStateChange,
+        selectionMode = "normal",
     }) => {
         const canvasRef = useRef(null);
 
@@ -81,19 +83,62 @@ const TimeGraduatedLine = memo(
 
                 const pixelsPerUnit = width / (end - start);
 
+                // Calculer les subdivisions optimales
+                const subdivInfo = calculateOptimalTimeSubdivisions(settings);
+
                 // Fonction locale pour dessiner une graduation
                 const drawGraduation = (x, value, isMain) => {
+                    // Vérifier si cette valeur est sélectionnée pour comparaison
+                    const isSelected = values.has(value);
+
+                    // Hauteur variable des graduations selon leur importance
+                    const gradHeight = isMain
+                        ? 15
+                        : (value * 10) % 10 === 5 ||
+                          (settings.timeUnit === "hour" &&
+                              (value * 60) % 60 === 30) ||
+                          (settings.timeUnit === "day" &&
+                              (value * 24) % 24 === 12)
+                        ? 12
+                        : 8;
+
+                    // Ajuster l'épaisseur du trait selon l'importance
+                    const lineWidth = isMain
+                        ? 1.5
+                        : (value * 10) % 10 === 5 ||
+                          (settings.timeUnit === "hour" &&
+                              (value * 60) % 60 === 30) ||
+                          (settings.timeUnit === "day" &&
+                              (value * 24) % 24 === 12)
+                        ? 1
+                        : 0.5;
+
                     // Graduation
                     ctx.beginPath();
-                    ctx.moveTo(x, height - (isMain ? 15 : 8));
-                    ctx.lineTo(x, height + (isMain ? 15 : 8));
-                    ctx.lineWidth = isMain ? 1 : 0.5;
+                    ctx.moveTo(x, height - gradHeight);
+                    ctx.lineTo(x, height + gradHeight);
+                    ctx.lineWidth = lineWidth;
                     ctx.stroke();
+
+                    // Si c'est une valeur sélectionnée, on dessine un cercle de mise en évidence
+                    if (isSelected) {
+                        ctx.beginPath();
+                        ctx.arc(x, height, 5, 0, 2 * Math.PI);
+                        ctx.fillStyle = "#FF6B6B";
+                        ctx.fill();
+                        ctx.lineWidth = 1;
+                        ctx.strokeStyle = "#D63031";
+                        ctx.stroke();
+
+                        // Restaurer les couleurs
+                        ctx.fillStyle = "#000000";
+                        ctx.strokeStyle = "#000000";
+                    }
 
                     // Valeur et flèche du haut
                     if (
                         (isMain && !hiddenMainValues.has(value)) ||
-                        values.has(value)
+                        isSelected
                     ) {
                         formatTimeOnGraduation(
                             value,
@@ -102,7 +147,13 @@ const TimeGraduatedLine = memo(
                             x,
                             height - 50
                         );
+
+                        // Dessiner la flèche en fonction de l'état de sélection
+                        if (isSelected) {
+                            ctx.strokeStyle = "#D63031"; // Flèche rouge pour les valeurs sélectionnées
+                        }
                         drawTopArrow(ctx, x, isMain ? height : height + 8);
+                        ctx.strokeStyle = "#000000"; // Restaurer la couleur
                     }
 
                     // Flèche du bas
@@ -112,9 +163,6 @@ const TimeGraduatedLine = memo(
                         ctx.strokeStyle = "#000000";
                     }
                 };
-
-                // Calculer les subdivisions optimales
-                const subdivInfo = calculateOptimalTimeSubdivisions(settings);
 
                 // Dessin des graduations principales
                 for (let i = start; i <= end; i += step) {
@@ -180,14 +228,23 @@ const TimeGraduatedLine = memo(
             [handleClick]
         );
 
-        const timeUnitDescription =
-            settings.timeUnit === "second"
-                ? "secondes"
-                : settings.timeUnit === "minute"
-                ? "minutes"
-                : settings.timeUnit === "hour"
-                ? "heures"
-                : "jours";
+        // Obtenir une description pédagogique de l'unité de temps
+        const getTimeUnitDescription = (unit) => {
+            switch (unit) {
+                case "second":
+                    return "secondes avec subdivisions de 1 seconde";
+                case "minute":
+                    return "minutes avec subdivisions de 1 minute";
+                case "hour":
+                    return "heures avec subdivisions de 15 minutes (quarts d'heure)";
+                case "day":
+                    return "jours avec subdivisions de 6 heures (quarts de journée)";
+                default:
+                    return unit;
+            }
+        };
+
+        const timeUnitDescription = getTimeUnitDescription(settings.timeUnit);
 
         return (
             <div
@@ -195,6 +252,18 @@ const TimeGraduatedLine = memo(
                 role="figure"
                 aria-label="Ligne graduée temporelle interactive"
             >
+                {/* Indicateur des subdivisions pour les enseignants */}
+                <div className="mb-2 flex justify-between items-center">
+                    <span className="text-sm text-gray-600 italic">
+                        Unité: {timeUnitDescription}
+                    </span>
+                    {selectionMode === "comparison" && (
+                        <span className="text-sm font-medium text-indigo-600 bg-indigo-100 px-2 py-1 rounded-md">
+                            Mode comparaison actif
+                        </span>
+                    )}
+                </div>
+
                 <canvas
                     role="img"
                     aria-description={`Ligne graduée temporelle de ${settings.intervals[0]} à ${settings.intervals[1]} ${timeUnitDescription}. Cliquez au-dessus de la ligne pour afficher ou masquer une valeur. Cliquez en-dessous pour placer une flèche rouge.`}
@@ -205,6 +274,26 @@ const TimeGraduatedLine = memo(
                     onClick={handleCanvasClick}
                     tabIndex={0}
                 />
+
+                {/* Instructions adaptées au mode actif */}
+                <div className="mt-2 text-sm text-gray-600">
+                    {selectionMode === "comparison" ? (
+                        <p>
+                            <span className="font-medium text-indigo-700">
+                                Mode comparaison :
+                            </span>{" "}
+                            Cliquez sur n&lsquo;importe quelle valeur pour la
+                            sélectionner et la comparer.
+                        </p>
+                    ) : (
+                        <p>
+                            <span className="font-medium">Mode normal :</span>{" "}
+                            Cliquez sur une graduation principale pour la
+                            masquer/afficher, sur une sous-graduation pour la
+                            sélectionner.
+                        </p>
+                    )}
+                </div>
             </div>
         );
     }
@@ -223,6 +312,7 @@ TimeGraduatedLine.propTypes = {
     hiddenMainValues: PropTypes.instanceOf(Set),
     arrows: PropTypes.instanceOf(Set),
     onStateChange: PropTypes.func,
+    selectionMode: PropTypes.string,
 };
 
 TimeGraduatedLine.displayName = "TimeGraduatedLine";

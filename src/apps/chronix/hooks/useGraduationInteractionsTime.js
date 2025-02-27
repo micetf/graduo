@@ -20,6 +20,8 @@ export const useGraduationInteractionsTime = (
         new Set()
     );
     const [localArrows, setLocalArrows] = useState(new Set());
+    // Nouvel état pour le mode de sélection
+    const [selectionMode, setSelectionMode] = useState("normal"); // "normal" ou "comparison"
 
     // Utilise soit l'état externe soit l'état local
     const values = externalState?.values || localValues;
@@ -52,18 +54,22 @@ export const useGraduationInteractionsTime = (
             // Vérifier que la valeur arrondie est dans les limites
             if (clickedValue >= start && clickedValue <= end) {
                 if (isAbove) {
-                    // Pour les clics au-dessus de la ligne
-                    if (isMainTimeValue(clickedValue, settings)) {
-                        // Si c'est une graduation principale
-                        setHiddenMainValues((prev) => {
-                            const newHidden = new Set(prev);
-                            newHidden.has(clickedValue)
-                                ? newHidden.delete(clickedValue)
-                                : newHidden.add(clickedValue);
-                            return newHidden;
-                        });
-                    } else {
-                        // Si c'est une sous-graduation
+                    // Déterminer si c'est une graduation principale
+                    const isMainValue = isMainTimeValue(clickedValue, settings);
+
+                    // Mode comparaison: toutes les valeurs sont ajoutées à values
+                    if (selectionMode === "comparison") {
+                        // Si c'est une graduation principale et qu'elle est masquée,
+                        // on doit d'abord la rendre visible
+                        if (isMainValue && hiddenMainValues.has(clickedValue)) {
+                            setHiddenMainValues((prev) => {
+                                const newHidden = new Set(prev);
+                                newHidden.delete(clickedValue);
+                                return newHidden;
+                            });
+                        }
+
+                        // Ensuite, on l'ajoute/supprime des valeurs sélectionnées
                         setValues((prev) => {
                             const newValues = new Set(prev);
                             newValues.has(clickedValue)
@@ -72,8 +78,30 @@ export const useGraduationInteractionsTime = (
                             return newValues;
                         });
                     }
+                    // Mode normal: comportement standard
+                    else {
+                        if (isMainValue) {
+                            // Si c'est une graduation principale, on la masque/affiche
+                            setHiddenMainValues((prev) => {
+                                const newHidden = new Set(prev);
+                                newHidden.has(clickedValue)
+                                    ? newHidden.delete(clickedValue)
+                                    : newHidden.add(clickedValue);
+                                return newHidden;
+                            });
+                        } else {
+                            // Si c'est une sous-graduation, on l'ajoute/supprime des valeurs
+                            setValues((prev) => {
+                                const newValues = new Set(prev);
+                                newValues.has(clickedValue)
+                                    ? newValues.delete(clickedValue)
+                                    : newValues.add(clickedValue);
+                                return newValues;
+                            });
+                        }
+                    }
                 } else {
-                    // Pour les clics en-dessous de la ligne (flèches)
+                    // Pour les clics en-dessous de la ligne (flèches), comportement inchangé
                     setArrows((prev) => {
                         const newArrows = new Set(prev);
                         newArrows.has(clickedValue)
@@ -87,11 +115,22 @@ export const useGraduationInteractionsTime = (
         [
             settings,
             getValueFromPosition,
+            selectionMode,
+            hiddenMainValues,
             setValues,
             setHiddenMainValues,
             setArrows,
         ]
     );
+
+    /**
+     * Basculer entre le mode normal et le mode comparaison
+     */
+    const toggleSelectionMode = useCallback(() => {
+        setSelectionMode((prev) =>
+            prev === "normal" ? "comparison" : "normal"
+        );
+    }, []);
 
     /**
      * Masque toutes les graduations principales
@@ -129,7 +168,9 @@ export const useGraduationInteractionsTime = (
         values,
         hiddenMainValues,
         arrows,
+        selectionMode,
         handleClick,
+        toggleSelectionMode,
         hideAllMainValues,
         showAllMainValues,
         resetDisplay,
