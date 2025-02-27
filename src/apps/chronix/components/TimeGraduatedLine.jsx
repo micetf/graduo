@@ -3,13 +3,15 @@ import PropTypes from "prop-types";
 import { useGraduationCalculator } from "@common/hooks";
 import { useGraduationInteractionsTime } from "../hooks/useGraduationInteractionsTime";
 import { drawTopArrow, drawBottomArrow } from "@common/utils/drawing";
+import { formatTimeOnGraduation } from "../utils/timeFormatter";
 import {
-    formatTimeOnGraduation,
-    getTimeSubdivisions,
-} from "../utils/timeFormatter";
+    calculateOptimalTimeSubdivisions,
+    generateSubdivisionValues,
+} from "../utils/adaptiveSubdivisions";
 
 /**
  * Composant affichant une ligne graduée adaptée aux mesures de temps
+ * avec des sous-graduations intelligentes
  * @param {Object} props Les propriétés du composant
  * @param {Object} props.settings Configuration de la ligne graduée temporelle
  * @param {Set} [props.values] Valeurs à afficher (optionnel)
@@ -57,7 +59,7 @@ const TimeGraduatedLine = memo(
                 externalState
             );
 
-        // Dessin des graduations temporelles
+        // Dessin des graduations temporelles avec subdivisions adaptatives
         const drawTimeGraduations = useCallback(
             (ctx, start, end, step, height) => {
                 // Configuration initiale du canvas
@@ -111,33 +113,34 @@ const TimeGraduatedLine = memo(
                     }
                 };
 
-                // Dessin des graduations principales et secondaires
-                for (let i = start; i < end; i += step) {
+                // Calculer les subdivisions optimales
+                const subdivInfo = calculateOptimalTimeSubdivisions(settings);
+
+                // Dessin des graduations principales
+                for (let i = start; i <= end; i += step) {
                     const x = Math.floor(50 + (i - start) * pixelsPerUnit);
+
+                    // Dessiner la graduation principale
                     drawGraduation(x, i, true);
 
-                    // Graduations secondaires adaptées aux mesures de temps
-                    const subdivisions = getTimeSubdivisions(settings);
-                    if (subdivisions > 1) {
-                        for (let j = 1; j < subdivisions; j++) {
-                            // Adapter le calcul pour tenir compte des unités de temps
-                            const subValue = i + (j * step) / subdivisions;
-                            if (subValue < end) {
-                                const subX = Math.floor(
-                                    50 + (subValue - start) * pixelsPerUnit
-                                );
-                                drawGraduation(subX, subValue, false);
-                            }
+                    // Si nous ne sommes pas à la dernière graduation
+                    if (i + step <= end) {
+                        // Générer les sous-graduations entre deux graduations principales
+                        const subdivValues = generateSubdivisionValues(
+                            i,
+                            i + step,
+                            subdivInfo
+                        );
+
+                        // Dessiner les sous-graduations
+                        for (const subValue of subdivValues) {
+                            const subX = Math.floor(
+                                50 + (subValue - start) * pixelsPerUnit
+                            );
+                            drawGraduation(subX, subValue, false);
                         }
                     }
                 }
-
-                // Dernière graduation
-                drawGraduation(
-                    Math.floor(50 + (end - start) * pixelsPerUnit),
-                    end,
-                    true
-                );
             },
             [settings, values, hiddenMainValues, arrows]
         );

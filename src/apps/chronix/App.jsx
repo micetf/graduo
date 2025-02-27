@@ -19,7 +19,7 @@ const DEFAULT_SETTINGS = {
 };
 
 /**
- * Composant principal du module Chronix
+ * Composant principal du module Chronix avec subdivisions adaptatives
  * @returns {JSX.Element} Le composant App de Chronix
  */
 function App() {
@@ -213,6 +213,20 @@ function App() {
                                     d&lsquo;heure, demi-journée...)
                                 </li>
                             </ul>
+                        </div>
+
+                        <div>
+                            <h3 className="font-semibold text-lg">
+                                Caractéristiques particulières
+                            </h3>
+                            <p className="mt-1">
+                                Cette ligne graduée utilise un système de
+                                subdivisions adaptatives qui s&lsquo;ajuste
+                                intelligemment en fonction de l&lsquo;unité de
+                                temps, du pas choisi et de l&lsquo;intervalle
+                                affiché, pour refléter les propriétés naturelles
+                                des mesures de temps.
+                            </p>
                         </div>
                     </div>
                 </div>
