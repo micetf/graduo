@@ -250,20 +250,20 @@ const TimeControlPanel = memo(
                     <button
                         onClick={onToggleSelectionMode}
                         className={`w-full mb-3 py-2 px-4 rounded transition-colors border ${
-                            selectionMode === "comparison"
+                            selectionMode === "selection"
                                 ? "bg-indigo-100 hover:bg-indigo-200 text-indigo-700 border-indigo-300"
                                 : "bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300"
                         }`}
                         title="Basculer entre les modes d'interaction"
                     >
-                        {selectionMode === "comparison"
-                            ? "Mode comparaison (actif)"
-                            : "Mode comparaison (inactif)"}
+                        {selectionMode === "selection"
+                            ? "Mode sélection (actif)"
+                            : "Mode affichage (actif)"}
                     </button>
                     <div className="text-xs text-gray-500 mb-3">
-                        {selectionMode === "comparison"
-                            ? "En mode comparaison, toutes les valeurs sur lesquelles vous cliquez sont ajoutées comme points de comparaison, y compris les graduations principales."
-                            : "En mode normal, cliquer sur une graduation principale la masque/affiche, et cliquer sur une sous-graduation l'ajoute comme point de comparaison."}
+                        {selectionMode === "selection"
+                            ? "En mode sélection, cliquez sur n'importe quelle valeur pour la sélectionner ou la désélectionner, sans modifier son affichage."
+                            : "En mode affichage, cliquez sur une graduation principale pour l'afficher ou la masquer, et cliquez sur une sous-graduation pour la sélectionner."}
                     </div>
                 </div>
 

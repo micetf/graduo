@@ -14,11 +14,12 @@ import {
  * avec des sous-graduations intelligentes
  * @param {Object} props Les propriétés du composant
  * @param {Object} props.settings Configuration de la ligne graduée temporelle
- * @param {Set} [props.values] Valeurs à afficher (optionnel)
+ * @param {Set} [props.values] Valeurs sélectionnées (optionnel)
  * @param {Set} [props.hiddenMainValues] Graduations principales masquées (optionnel)
+ * @param {Set} [props.hiddenSubValues] Sous-graduations affichées (optionnel)
  * @param {Set} [props.arrows] Flèches à afficher (optionnel)
  * @param {Function} [props.onStateChange] Callback appelé lors des changements d'état
- * @param {string} [props.selectionMode] Mode de sélection ("normal" ou "comparison")
+ * @param {string} [props.selectionMode] Mode de sélection ("normal" ou "selection")
  * @returns {JSX.Element} Le composant TimeGraduatedLine
  */
 const TimeGraduatedLine = memo(
@@ -26,6 +27,7 @@ const TimeGraduatedLine = memo(
         settings,
         values: externalValues,
         hiddenMainValues: externalHiddenMainValues,
+        hiddenSubValues: externalHiddenSubValues,
         arrows: externalArrows,
         onStateChange,
         selectionMode = "normal",
@@ -40,26 +42,38 @@ const TimeGraduatedLine = memo(
 
         // Configure l'état externe si fourni
         const externalState =
-            externalValues && externalHiddenMainValues && externalArrows
+            externalValues &&
+            externalHiddenMainValues &&
+            externalHiddenSubValues &&
+            externalArrows
                 ? {
                       values: externalValues,
                       hiddenMainValues: externalHiddenMainValues,
+                      hiddenSubValues: externalHiddenSubValues,
                       arrows: externalArrows,
                       setValues: (newValues) =>
                           onStateChange?.("values", newValues),
                       setHiddenMainValues: (newHidden) =>
                           onStateChange?.("hiddenMainValues", newHidden),
+                      setHiddenSubValues: (newHidden) =>
+                          onStateChange?.("hiddenSubValues", newHidden),
                       setArrows: (newArrows) =>
                           onStateChange?.("arrows", newArrows),
                   }
                 : null;
 
-        const { values, hiddenMainValues, arrows, handleClick } =
-            useGraduationInteractionsTime(
-                settings,
-                getValueFromPosition,
-                externalState
-            );
+        const {
+            values,
+            hiddenMainValues,
+            hiddenSubValues,
+            arrows,
+            handleClick,
+        } = useGraduationInteractionsTime(
+            settings,
+            getValueFromPosition,
+            externalState,
+            selectionMode
+        );
 
         // Dessin des graduations temporelles avec subdivisions adaptatives
         const drawTimeGraduations = useCallback(
@@ -91,6 +105,12 @@ const TimeGraduatedLine = memo(
                     // Vérifier si cette valeur est sélectionnée pour comparaison
                     const isSelected = values.has(value);
 
+                    // Graduations principales: affichées sauf si dans hiddenMainValues
+                    // Sous-graduations: affichées seulement si dans hiddenSubValues
+                    const shouldDisplay = isMain
+                        ? !hiddenMainValues.has(value)
+                        : hiddenSubValues.has(value);
+
                     // Hauteur variable des graduations selon leur importance
                     const gradHeight = isMain
                         ? 15
@@ -113,21 +133,21 @@ const TimeGraduatedLine = memo(
                         ? 1
                         : 0.5;
 
-                    // Graduation
+                    // Graduation (toujours visible)
                     ctx.beginPath();
                     ctx.moveTo(x, height - gradHeight);
                     ctx.lineTo(x, height + gradHeight);
                     ctx.lineWidth = lineWidth;
                     ctx.stroke();
 
-                    // Si c'est une valeur sélectionnée, on dessine un cercle de mise en évidence
-                    if (isSelected) {
+                    // Si c'est une valeur sélectionnée ET en mode sélection, on dessine un point rouge
+                    if (isSelected && selectionMode === "selection") {
                         ctx.beginPath();
-                        ctx.arc(x, height, 5, 0, 2 * Math.PI);
-                        ctx.fillStyle = "#FF6B6B";
+                        ctx.arc(x, height, 6, 0, 2 * Math.PI);
+                        ctx.fillStyle = "#FF4136"; // Rouge vif
                         ctx.fill();
                         ctx.lineWidth = 1;
-                        ctx.strokeStyle = "#D63031";
+                        ctx.strokeStyle = "#85144b"; // Bordure plus foncée
                         ctx.stroke();
 
                         // Restaurer les couleurs
@@ -135,10 +155,10 @@ const TimeGraduatedLine = memo(
                         ctx.strokeStyle = "#000000";
                     }
 
-                    // Valeur et flèche du haut
+                    // Valeur et flèche du haut (affichées selon shouldDisplay ou si sélectionnée en mode sélection)
                     if (
-                        (isMain && !hiddenMainValues.has(value)) ||
-                        isSelected
+                        shouldDisplay ||
+                        (selectionMode === "selection" && isSelected)
                     ) {
                         formatTimeOnGraduation(
                             value,
@@ -148,15 +168,15 @@ const TimeGraduatedLine = memo(
                             height - 50
                         );
 
-                        // Dessiner la flèche en fonction de l'état de sélection
-                        if (isSelected) {
-                            ctx.strokeStyle = "#D63031"; // Flèche rouge pour les valeurs sélectionnées
+                        // Dessiner la flèche en fonction de l'état (sélection/mode)
+                        if (isSelected && selectionMode === "selection") {
+                            ctx.strokeStyle = "#FF4136"; // Flèche rouge vif en mode sélection
                         }
                         drawTopArrow(ctx, x, isMain ? height : height + 8);
                         ctx.strokeStyle = "#000000"; // Restaurer la couleur
                     }
 
-                    // Flèche du bas
+                    // Flèche du bas (si présente)
                     if (arrows.has(value)) {
                         ctx.strokeStyle = "#FF0000";
                         drawBottomArrow(ctx, x, isMain ? height : height - 8);
@@ -190,7 +210,14 @@ const TimeGraduatedLine = memo(
                     }
                 }
             },
-            [settings, values, hiddenMainValues, arrows]
+            [
+                settings,
+                values,
+                hiddenMainValues,
+                hiddenSubValues,
+                arrows,
+                selectionMode,
+            ]
         );
 
         // Effet pour le rendu initial et les mises à jour
@@ -248,7 +275,11 @@ const TimeGraduatedLine = memo(
 
         return (
             <div
-                className="bg-white p-4 rounded-lg shadow"
+                className={`bg-white p-4 rounded-lg shadow ${
+                    selectionMode === "selection"
+                        ? "border-2 border-indigo-300"
+                        : ""
+                }`}
                 role="figure"
                 aria-label="Ligne graduée temporelle interactive"
             >
@@ -257,40 +288,49 @@ const TimeGraduatedLine = memo(
                     <span className="text-sm text-gray-600 italic">
                         Unité: {timeUnitDescription}
                     </span>
-                    {selectionMode === "comparison" && (
+                    {selectionMode === "selection" && (
                         <span className="text-sm font-medium text-indigo-600 bg-indigo-100 px-2 py-1 rounded-md">
-                            Mode comparaison actif
+                            Mode sélection actif
                         </span>
                     )}
                 </div>
 
                 <canvas
                     role="img"
-                    aria-description={`Ligne graduée temporelle de ${settings.intervals[0]} à ${settings.intervals[1]} ${timeUnitDescription}. Cliquez au-dessus de la ligne pour afficher ou masquer une valeur. Cliquez en-dessous pour placer une flèche rouge.`}
+                    aria-description={`Ligne graduée temporelle de ${
+                        settings.intervals[0]
+                    } à ${settings.intervals[1]} ${timeUnitDescription}. ${
+                        selectionMode === "selection"
+                            ? "Cliquez sur les graduations pour sélectionner des valeurs à comparer."
+                            : "Cliquez au-dessus de la ligne pour afficher ou masquer une valeur. Cliquez en-dessous pour placer une flèche rouge."
+                    }`}
                     ref={canvasRef}
                     width={800}
                     height={200}
-                    className="w-full cursor-pointer focus:outline-blue-500"
+                    className={`w-full cursor-pointer focus:outline-blue-500 ${
+                        selectionMode === "selection" ? "hover:cursor-cell" : ""
+                    }`}
                     onClick={handleCanvasClick}
                     tabIndex={0}
                 />
 
                 {/* Instructions adaptées au mode actif */}
                 <div className="mt-2 text-sm text-gray-600">
-                    {selectionMode === "comparison" ? (
+                    {selectionMode === "selection" ? (
                         <p>
                             <span className="font-medium text-indigo-700">
-                                Mode comparaison :
+                                Mode sélection :
                             </span>{" "}
                             Cliquez sur n&lsquo;importe quelle valeur pour la
-                            sélectionner et la comparer.
+                            sélectionner ou la désélectionner.
                         </p>
                     ) : (
                         <p>
-                            <span className="font-medium">Mode normal :</span>{" "}
-                            Cliquez sur une graduation principale pour la
-                            masquer/afficher, sur une sous-graduation pour la
-                            sélectionner.
+                            <span className="font-medium">
+                                Mode affichage :
+                            </span>{" "}
+                            Cliquez sur n&lsquo;importe quelle graduation pour
+                            l&lsquo;afficher ou la masquer.
                         </p>
                     )}
                 </div>
@@ -310,6 +350,7 @@ TimeGraduatedLine.propTypes = {
     }).isRequired,
     values: PropTypes.instanceOf(Set),
     hiddenMainValues: PropTypes.instanceOf(Set),
+    hiddenSubValues: PropTypes.instanceOf(Set),
     arrows: PropTypes.instanceOf(Set),
     onStateChange: PropTypes.func,
     selectionMode: PropTypes.string,

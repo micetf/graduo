@@ -27,21 +27,26 @@ function App() {
     const [settings, setSettings] = useState(DEFAULT_SETTINGS);
     const [values, setValues] = useState(new Set());
     const [hiddenMainValues, setHiddenMainValues] = useState(new Set());
+    const [hiddenSubValues, setHiddenSubValues] = useState(new Set());
     const [arrows, setArrows] = useState(new Set());
 
     // Hooks personnalisés pour la gestion des interactions
     const {
         hideAllMainValues,
         showAllMainValues,
+        hideAllSubValues,
+        showAllSubValues,
         resetDisplay,
         selectionMode,
         toggleSelectionMode,
     } = useGraduationInteractionsTime(settings, null, {
         values,
         hiddenMainValues,
+        hiddenSubValues,
         arrows,
         setValues,
         setHiddenMainValues,
+        setHiddenSubValues,
         setArrows,
     });
 
@@ -63,9 +68,14 @@ function App() {
             case "hiddenMainValues":
                 setHiddenMainValues(newState);
                 break;
+            case "hiddenSubValues":
+                setHiddenSubValues(newState);
+                break;
             case "arrows":
                 setArrows(newState);
                 break;
+            default:
+                console.warn(`Type d'état non reconnu: ${stateType}`);
         }
     };
 
@@ -116,9 +126,10 @@ function App() {
                         settings={settings}
                         values={values}
                         hiddenMainValues={hiddenMainValues}
+                        hiddenSubValues={hiddenSubValues}
                         arrows={arrows}
                         onStateChange={handleStateChange}
-                        selectionMode={selectionMode} // Ajout de cette ligne
+                        selectionMode={selectionMode}
                     />
                 </div>
 
@@ -132,6 +143,8 @@ function App() {
                             onResetDisplay={resetDisplay}
                             onHideMainValues={hideAllMainValues}
                             onShowMainValues={showAllMainValues}
+                            onHideSubValues={hideAllSubValues}
+                            onShowSubValues={showAllSubValues}
                             areAllMainValuesHidden={areAllMainValuesHidden}
                             selectionMode={selectionMode}
                             onToggleSelectionMode={toggleSelectionMode}
@@ -175,18 +188,24 @@ function App() {
                             </h3>
                             <ul className="list-disc pl-5 mt-2 space-y-1">
                                 <li>
-                                    Cliquez <strong>au-dessus</strong> de la
-                                    ligne pour afficher ou masquer une valeur
-                                    temporelle
+                                    En mode affichage, cliquez{" "}
+                                    <strong>au-dessus</strong> de la ligne pour
+                                    afficher ou masquer une valeur temporelle
                                 </li>
                                 <li>
-                                    Cliquez <strong>en-dessous</strong> de la
-                                    ligne pour placer une flèche rouge
+                                    En mode sélection, cliquez{" "}
+                                    <strong>au-dessus</strong> de la ligne pour
+                                    sélectionner une valeur à comparer
+                                </li>
+                                <li>
+                                    Dans les deux modes, cliquez{" "}
+                                    <strong>en-dessous</strong> de la ligne pour
+                                    placer une flèche rouge
                                 </li>
                                 <li>
                                     Utilisez le panneau de contrôle pour changer
-                                    l&lsquo;unité, les intervalles et le format
-                                    d&lsquo;affichage
+                                    le mode, l&lsquo;unité, les intervalles et
+                                    le format d&lsquo;affichage
                                 </li>
                                 <li>
                                     Sélectionnez deux points pour mesurer
