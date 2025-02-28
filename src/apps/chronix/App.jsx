@@ -130,6 +130,12 @@ function App() {
                         arrows={arrows}
                         onStateChange={handleStateChange}
                         selectionMode={selectionMode}
+                        onToggleSelectionMode={toggleSelectionMode}
+                        onShowAllMainValues={showAllMainValues}
+                        onHideAllMainValues={hideAllMainValues}
+                        onShowAllSubValues={showAllSubValues}
+                        onResetDisplay={resetDisplay}
+                        areAllMainValuesHidden={areAllMainValuesHidden}
                     />
                 </div>
 
@@ -156,11 +162,13 @@ function App() {
                         <TimeDisplay
                             values={selectedValuesArray}
                             settings={settings}
+                            selectionMode={selectionMode}
                         />
 
                         <TimeDurationCalculator
                             selectedValues={selectedValuesArray}
                             settings={settings}
+                            selectionMode={selectionMode}
                         />
                     </div>
 
@@ -171,90 +179,6 @@ function App() {
                             settings={settings}
                             onAddValue={handleAddValue}
                         />
-                    </div>
-                </div>
-
-                {/* Section d'aide et d'explication didactique */}
-                <div className="mt-8 bg-white rounded-lg shadow p-6">
-                    <h2 className="text-xl font-bold mb-4">
-                        Guide d&lsquo;utilisation
-                    </h2>
-
-                    <div className="space-y-4 text-gray-700">
-                        <div>
-                            <h3 className="font-semibold text-lg">
-                                Comment utiliser cette ligne graduée temporelle
-                                ?
-                            </h3>
-                            <ul className="list-disc pl-5 mt-2 space-y-1">
-                                <li>
-                                    En mode affichage, cliquez{" "}
-                                    <strong>au-dessus</strong> de la ligne pour
-                                    afficher ou masquer une valeur temporelle
-                                </li>
-                                <li>
-                                    En mode sélection, cliquez{" "}
-                                    <strong>au-dessus</strong> de la ligne pour
-                                    sélectionner une valeur à comparer
-                                </li>
-                                <li>
-                                    Dans les deux modes, cliquez{" "}
-                                    <strong>en-dessous</strong> de la ligne pour
-                                    placer une flèche rouge
-                                </li>
-                                <li>
-                                    Utilisez le panneau de contrôle pour changer
-                                    le mode, l&lsquo;unité, les intervalles et
-                                    le format d&lsquo;affichage
-                                </li>
-                                <li>
-                                    Sélectionnez deux points pour mesurer
-                                    automatiquement une durée
-                                </li>
-                                <li>
-                                    Effectuez des opérations temporelles
-                                    (addition, soustraction, etc.) avec les
-                                    valeurs sélectionnées
-                                </li>
-                            </ul>
-                        </div>
-
-                        <div>
-                            <h3 className="font-semibold text-lg">
-                                Applications pédagogiques
-                            </h3>
-                            <ul className="list-disc pl-5 mt-2 space-y-1">
-                                <li>
-                                    Visualisation de durées et d&lsquo;horaires
-                                </li>
-                                <li>Calcul d&lsquo;intervalles de temps</li>
-                                <li>
-                                    Conversion entre différentes unités
-                                    temporelles
-                                </li>
-                                <li>
-                                    Résolution de problèmes impliquant le temps
-                                </li>
-                                <li>
-                                    Représentation des fractions de temps (quart
-                                    d&lsquo;heure, demi-journée...)
-                                </li>
-                            </ul>
-                        </div>
-
-                        <div>
-                            <h3 className="font-semibold text-lg">
-                                Caractéristiques particulières
-                            </h3>
-                            <p className="mt-1">
-                                Cette ligne graduée utilise un système de
-                                subdivisions adaptatives qui s&lsquo;ajuste
-                                intelligemment en fonction de l&lsquo;unité de
-                                temps, du pas choisi et de l&lsquo;intervalle
-                                affiché, pour refléter les propriétés naturelles
-                                des mesures de temps.
-                            </p>
-                        </div>
                     </div>
                 </div>
             </div>

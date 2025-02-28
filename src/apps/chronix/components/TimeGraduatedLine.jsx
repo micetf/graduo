@@ -1,4 +1,4 @@
-import { memo, useRef, useEffect, useCallback } from "react";
+import { memo, useRef, useEffect, useCallback, useState } from "react";
 import PropTypes from "prop-types";
 import { useGraduationCalculator } from "@common/hooks";
 import { useGraduationInteractionsTime } from "../hooks/useGraduationInteractionsTime";
@@ -8,6 +8,15 @@ import {
     calculateOptimalTimeSubdivisions,
     generateSubdivisionValues,
 } from "../utils/adaptiveSubdivisions";
+import {
+    Eye,
+    EyeOff,
+    MousePointer,
+    RotateCcw,
+    Grid,
+    HelpCircle,
+} from "lucide-react";
+import HelpPopup from "./HelpPopup";
 
 /**
  * Composant affichant une ligne graduée adaptée aux mesures de temps
@@ -20,6 +29,11 @@ import {
  * @param {Set} [props.arrows] Flèches à afficher (optionnel)
  * @param {Function} [props.onStateChange] Callback appelé lors des changements d'état
  * @param {string} [props.selectionMode] Mode de sélection ("normal" ou "selection")
+ * @param {Function} [props.onToggleSelectionMode] Callback pour basculer le mode de sélection
+ * @param {Function} [props.onShowAllMainValues] Callback pour afficher toutes les graduations principales
+ * @param {Function} [props.onHideAllMainValues] Callback pour masquer toutes les graduations principales
+ * @param {Function} [props.onShowAllSubValues] Callback pour afficher toutes les sous-graduations
+ * @param {Function} [props.onResetDisplay] Callback pour réinitialiser l'affichage
  * @returns {JSX.Element} Le composant TimeGraduatedLine
  */
 const TimeGraduatedLine = memo(
@@ -31,9 +45,24 @@ const TimeGraduatedLine = memo(
         arrows: externalArrows,
         onStateChange,
         selectionMode = "normal",
+        onToggleSelectionMode,
+        onShowAllMainValues,
+        onHideAllMainValues,
+        onShowAllSubValues,
+        onResetDisplay,
+        areAllMainValuesHidden,
     }) => {
         const canvasRef = useRef(null);
+        // État pour gérer l'affichage de l'aide
+        const [showHelp, setShowHelp] = useState(false);
 
+        // Vérifier au chargement si l'aide doit être affichée automatiquement
+        useEffect(() => {
+            const hideHelp = localStorage.getItem("hideChronixHelpOnStartup");
+            if (!hideHelp) {
+                setShowHelp(true);
+            }
+        }, []);
         // Hooks personnalisés
         const { getValueFromPosition } = useGraduationCalculator(
             settings,
@@ -273,6 +302,14 @@ const TimeGraduatedLine = memo(
 
         const timeUnitDescription = getTimeUnitDescription(settings.timeUnit);
 
+        // Sélectionne seulement les fonctions disponibles pour la barre d'outils
+        const hasToolbarControls =
+            onToggleSelectionMode &&
+            onShowAllMainValues &&
+            onHideAllMainValues &&
+            onShowAllSubValues &&
+            onResetDisplay;
+
         return (
             <div
                 className={`bg-white p-4 rounded-lg shadow ${
@@ -283,6 +320,96 @@ const TimeGraduatedLine = memo(
                 role="figure"
                 aria-label="Ligne graduée temporelle interactive"
             >
+                {/* Barre d'outils - affichée seulement si les callbacks nécessaires sont fournis */}
+                {hasToolbarControls && (
+                    <div className="mb-3 flex items-center justify-between bg-gray-100 rounded-lg p-1.5">
+                        <div className="flex items-center flex-wrap gap-1">
+                            {/* Modes */}
+                            <button
+                                onClick={onToggleSelectionMode}
+                                className={`flex items-center px-2 py-1 rounded text-xs transition-colors ${
+                                    selectionMode === "normal"
+                                        ? "bg-white shadow text-blue-700 font-medium"
+                                        : "text-gray-700 hover:bg-gray-200"
+                                }`}
+                                title="Mode affichage : afficher/masquer les graduations"
+                            >
+                                {selectionMode === "normal" ? (
+                                    <>
+                                        <Eye className="w-3.5 h-3.5 mr-1 text-blue-700" />
+                                        <span className="text-gray-700">
+                                            Affichage
+                                        </span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <MousePointer className="w-3.5 h-3.5 mr-1 text-indigo-700" />
+                                        <span className="text-gray-700">
+                                            Sélection
+                                        </span>
+                                    </>
+                                )}
+                            </button>
+
+                            <div className="h-5 mx-1 border-l border-gray-300"></div>
+
+                            {/* Actions d'affichage */}
+                            <button
+                                onClick={
+                                    areAllMainValuesHidden
+                                        ? onShowAllMainValues
+                                        : onHideAllMainValues
+                                }
+                                className="flex items-center px-2 py-1 rounded text-xs text-gray-700 hover:bg-gray-200 transition-colors"
+                                title={
+                                    areAllMainValuesHidden
+                                        ? "Afficher toutes les graduations principales"
+                                        : "Masquer toutes les graduations principales"
+                                }
+                            >
+                                {areAllMainValuesHidden ? (
+                                    <>
+                                        <Grid className="w-3.5 h-3.5 mr-1" />
+                                        <span>Afficher</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <EyeOff className="w-3.5 h-3.5 mr-1" />
+                                        <span>Masquer</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
+
+                        <div className="flex items-center">
+                            {/* Bouton d'aide */}
+                            <button
+                                onClick={() => setShowHelp(true)}
+                                className="flex items-center px-2 py-1 rounded text-xs text-gray-700 hover:bg-gray-200 transition-colors ml-2"
+                                title="Afficher l'aide"
+                            >
+                                <HelpCircle className="w-3.5 h-3.5 mr-1" />
+                                <span>Aide</span>
+                            </button>
+
+                            {/* Bouton réinitialiser */}
+                            <button
+                                onClick={onResetDisplay}
+                                className="flex items-center px-2 py-1 rounded text-xs text-gray-700 hover:bg-gray-200 transition-colors ml-1"
+                                title="Réinitialiser l'affichage"
+                            >
+                                <RotateCcw className="w-3.5 h-3.5 mr-1" />
+                                <span>Réinitialiser</span>
+                            </button>
+                        </div>
+                    </div>
+                )}
+                {/* Composant popup d'aide */}
+                <HelpPopup
+                    isOpen={showHelp}
+                    onClose={() => setShowHelp(false)}
+                />
+
                 {/* Indicateur des subdivisions pour les enseignants */}
                 <div className="mb-2 flex justify-between items-center">
                     <span className="text-sm text-gray-600 italic">
@@ -354,6 +481,12 @@ TimeGraduatedLine.propTypes = {
     arrows: PropTypes.instanceOf(Set),
     onStateChange: PropTypes.func,
     selectionMode: PropTypes.string,
+    onToggleSelectionMode: PropTypes.func,
+    onShowAllMainValues: PropTypes.func,
+    onHideAllMainValues: PropTypes.func,
+    onShowAllSubValues: PropTypes.func,
+    onResetDisplay: PropTypes.func,
+    areAllMainValuesHidden: PropTypes.bool,
 };
 
 TimeGraduatedLine.displayName = "TimeGraduatedLine";

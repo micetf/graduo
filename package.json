@@ -24,6 +24,7 @@
     "dependencies": {
         "@heroicons/react": "^2.2.0",
         "html2canvas": "^1.4.1",
+        "lucide-react": "^0.476.0",
         "react": "^19.0.0",
         "react-dom": "^19.0.0"
     },

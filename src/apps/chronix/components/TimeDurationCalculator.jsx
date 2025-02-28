@@ -9,10 +9,16 @@ import { convertTime } from "../utils/timeConverter";
  * @param {Array} props.selectedValues - Les valeurs sélectionnées sur la ligne graduée
  * @param {Object} props.settings - Les paramètres de configuration
  * @param {string} props.className - Classes CSS supplémentaires
+ * @param {string} props.selectionMode - Mode de sélection (normal ou selection)
  * @returns {JSX.Element} Le composant TimeDurationCalculator
  */
 const TimeDurationCalculator = memo(
-    ({ selectedValues, settings, className = "" }) => {
+    ({
+        selectedValues,
+        settings,
+        className = "",
+        selectionMode = "normal",
+    }) => {
         const [calculations, setCalculations] = useState({
             duration: 0,
             startTime: null,
@@ -49,8 +55,9 @@ const TimeDurationCalculator = memo(
                 <div className={`bg-white rounded-lg shadow p-4 ${className}`}>
                     <div className="text-center text-gray-500">
                         <p>
-                            Sélectionnez exactement deux points sur la ligne
-                            graduée pour calculer une durée.
+                            {selectionMode === "selection"
+                                ? "Sélectionnez exactement deux points sur la ligne graduée pour calculer une durée."
+                                : "Passez en mode sélection pour pouvoir calculer des durées entre deux points."}
                         </p>
                     </div>
                 </div>
@@ -183,6 +190,7 @@ TimeDurationCalculator.propTypes = {
         intervals: PropTypes.arrayOf(PropTypes.number).isRequired,
     }).isRequired,
     className: PropTypes.string,
+    selectionMode: PropTypes.oneOf(["normal", "selection"]),
 };
 
 TimeDurationCalculator.displayName = "TimeDurationCalculator";
